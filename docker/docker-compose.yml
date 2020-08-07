@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  local:
+    image: mysql:8.0.17
+    command: [--default-authentication-plugin=mysql_native_password]
+    environment:
+      MYSQL_ROOT_PASSWORD: docker
+      MYSQL_DATABASE: pokemon
+    ports:
+      - "3309:3306"
+    networks:
+      local_net:
+        ipv4_address: 10.0.0.5
+
+networks:
+  local_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.0.5/16
