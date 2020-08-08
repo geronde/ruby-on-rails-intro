@@ -1,7 +1,7 @@
 class CreateTypes < ActiveRecord::Migration[6.0]
   def up
     create_table :types, :id => false do |t|
-      t.string :id, :null => false
+      t.string :id, :primary_key => true
       t.string :name, :null => false
       t.timestamps 
     end

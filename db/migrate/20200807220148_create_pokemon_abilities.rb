@@ -1,12 +1,11 @@
 class CreatePokemonAbilities < ActiveRecord::Migration[6.0]
   def up
-    create_table :pokemon_abilities do |t|
-      t.string :pokemon_id
-      t.string :ability_id
-      t.timestamps
+    create_join_table :pokemons, :abilities do |t|
+      t.index :pokemon_id
+      t.index :ability_id
     end
   end
   def down
-    drop_table :pokemon_abilities
+    drop_table :abilities_pokemons
   end
 end
