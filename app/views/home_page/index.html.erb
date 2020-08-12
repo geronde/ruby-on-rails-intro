@@ -1,6 +1,9 @@
+<%= render 'components/header', title: @title  %>
+
  <section>
 <% @pokemons.each do |pokemon| %>
 <article><%= pokemon[:name] %></article>
 <% end %>
 </section> 
- 
+
+ <%= render 'components/footer' %>  
