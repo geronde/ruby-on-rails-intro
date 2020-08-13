@@ -1,10 +1,8 @@
-require 'json'
 class PokemonsController < ApplicationController
     layout false
 
     def index
-        allPokemons = Pokemon.all
-        @pokemons = allPokemons.map {|poke| {name: poke["name"]}}
+        @pokemons = Pokemon.order(:name).page(params[:page])
         @title = 'Pokemons'
       end
 
@@ -32,7 +30,7 @@ class PokemonsController < ApplicationController
         pokemonType = PokemonType.where(type_id: params[:id])
         pokemonIds = pokemonType.map {|tp| tp[:pokemon_id] }
 
-        @pokemons = Pokemon.find(pokemonIds)
+        @pokemons = Pokemon.where(id:pokemonIds).order(:name).page(params[:page])
         
     end
 end

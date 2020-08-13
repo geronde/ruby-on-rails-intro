@@ -56,3 +56,4 @@ gem "async-http", "~> 0.52.4"
 
 gem "async", "~> 1.26"
 gem "json", "~> 2.3"
+gem "kaminari"
