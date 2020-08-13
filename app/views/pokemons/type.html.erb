@@ -1,0 +1,11 @@
+<%= render 'components/header', title: @title  %>
+
+<div class="pokemon-type">
+<ul>
+<% @pokemons.each do |poke| %>
+<li><%= poke[:name] %></li>
+<% end %>
+</ul>
+</div>
+
+ <%= render 'components/footer' %>  
