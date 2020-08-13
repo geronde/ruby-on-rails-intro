@@ -1,7 +1,5 @@
 Rails.application.routes.draw do
-  get 'home_page/index'
+  root 'pokemons#index'
 
-  resources :pokemons 
-
-  root 'home_page#index'
+  match ':controller(/:action(/:id))', :via => :get
 end

@@ -1,0 +1,19 @@
+<%= render 'components/header', title: @title  %>
+
+<div class="pokemon-container">
+<%= image_tag ("#{@pokemon[:picture]}") %>
+<h4>Abilities</h4>
+<ul>
+<% @abilities.each do |ab| %>
+<li><%= ab[:name] %></li>
+<% end %>
+</ul>
+<h4>Evolutions</h4>
+<ul>
+<% @evolutions.each do |ev| %>
+<li><%= ev[:name] %></li>
+<% end %>
+</ul>
+</div>
+
+ <%= render 'components/footer' %>  
