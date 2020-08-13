@@ -26,7 +26,7 @@ module Pokeapi
     end
 
     def Pokeapi.getPokemons()
-        pokemons = Pokeapi.fetch('https://pokeapi.co/api/v2/pokemon?limit=1000&offset=200')
+        pokemons = Pokeapi.fetch('https://pokeapi.co/api/v2/pokemon?limit=2000&offset=0')
         formattedPokemons = pokemons["results"].map{|poke| {created_at:DateTime.now,updated_at:DateTime.now ,name: poke["name"], id: Pokeapi.getId(poke["url"])} }
         
         return formattedPokemons
@@ -39,7 +39,7 @@ module Pokeapi
     end
     
     def Pokeapi.getAbilities()
-        abilities = Pokeapi.fetch('https://pokeapi.co/api/v2/ability?offset=20&limit=1000')
+        abilities = Pokeapi.fetch('https://pokeapi.co/api/v2/ability?offset=0&limit=2000')
         formatted = abilities["results"].map{|type| {created_at:DateTime.now, updated_at:DateTime.now,name: type["name"], id: Pokeapi.getId(type["url"])} }
     end
 
