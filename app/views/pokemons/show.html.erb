@@ -14,6 +14,12 @@
 <li><%= ev[:name] %></li>
 <% end %>
 </ul>
+<h4>Types</h4>
+<ul>
+<% @types.each do |type| %>
+<li><%= type[:name] %></li>
+<% end %>
+</ul>
 </div>
 
  <%= render 'components/footer' %>  
