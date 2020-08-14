@@ -1,36 +1,36 @@
+# frozen_string_literal: true
+
 class PokemonsController < ApplicationController
-    layout false
+  layout false
 
-    def index
-        @pokemons = Pokemon.order(:name).page(params[:page])
-        @title = 'Pokemons'
-      end
+  def index
+    @pokemons = Pokemon.order(:name).page(params[:page])
+    @title = 'Pokemons'
+  end
 
-    def show
-        @pokemon = Pokemon.find(params[:id])
+  def show
+    @pokemon = Pokemon.find(params[:id])
 
-        pokemonAbility = PokemonAbility.where(pokemon_id: params[:id])
-        pokemonEvolution = PokemonEvolution.where(pokemon_id: params[:id])
-        pokemonType = PokemonType.where(pokemon_id: params[:id])
-        
-        
-        abilityIds = pokemonAbility.map {|pab| pab[:ability_id] }
-        evolutionIds = pokemonEvolution.map {|pab| pab[:evolution_id] }
-        typeIds = pokemonType.map {|tp| tp[:type_id] }
-        
-        @abilities = Ability.find(abilityIds)
-        @evolutions = Evolution.find(evolutionIds)
-        @types = Type.find(typeIds)
-        @title = @pokemon[:name]
-    end
+    pokemon_ability = PokemonAbility.where(pokemon_id: params[:id])
+    pokemon_evolution = PokemonEvolution.where(pokemon_id: params[:id])
+    pokemon_type = PokemonType.where(pokemon_id: params[:id])
 
-    def type
-        selectedType = Type.find(params[:id])
-        @title = selectedType[:name]
-        pokemonType = PokemonType.where(type_id: params[:id])
-        pokemonIds = pokemonType.map {|tp| tp[:pokemon_id] }
+    ability_ids = pokemon_ability.map { |pab| pab[:ability_id] }
+    evolution_ids = pokemon_evolution.map { |pab| pab[:evolution_id] }
+    type_ids = pokemon_type.map { |tp| tp[:type_id] }
 
-        @pokemons = Pokemon.where(id:pokemonIds).order(:name).page(params[:page])
-        
-    end
+    @abilities = Ability.find(ability_ids)
+    @evolutions = Evolution.find(evolution_ids)
+    @types = Type.find(type_ids)
+    @title = @pokemon[:name]
+  end
+
+  def type
+    selected_type = Type.find(params[:id])
+    @title = selected_type[:name]
+    pokemon_type = PokemonType.where(type_id: params[:id])
+    pokemon_ids = pokemon_type.map { |tp| tp[:pokemon_id] }
+
+    @pokemons = Pokemon.where(id: pokemon_ids).order(:name).page(params[:page])
+  end
 end

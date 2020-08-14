@@ -1,125 +1,155 @@
+# frozen_string_literal: true
+
+# rubocop:disable Metrics/ModuleLength
+
 require 'json'
 require 'async'
 require 'async/http/internet'
 
 require File.expand_path('../../config/environment', __dir__)
 
-module Pokeapi   
-    def Pokeapi.fetch(url)
+# PokeApi module to extract pokemon data and insert in database
+module Pokeapi
+  def self.fetch(url)
+    data = {}
+    Async do
+      internet = Async::HTTP::Internet.new
+      response = internet.get(url)
+      begin
+        data = JSON.parse(response.read)
+      rescue JSON::ParserError
         data = {}
-        Async do 
-            internet = Async::HTTP::Internet.new
-            response = internet.get(url)
-            begin
-                data = JSON.parse(response.read)
-            rescue JSON::ParserError
-                data = {}
-            end
-        ensure 
-            internet.close    
+      end
+    ensure
+      internet.close
+    end
+    data
+  end
+
+  def self.get_id(str)
+    str.split('/').slice(-1)
+  end
+
+  def self.fetch_pokemons
+    pokemons = Pokeapi.fetch('https://pokeapi.co/api/v2/pokemon?limit=2000&offset=0')
+    pokemons['results'].map do |poke|
+      { created_at: DateTime.now,
+        updated_at: DateTime.now,
+        name: poke['name'],
+        id: Pokeapi.get_id(poke['url']) }
+    end
+  end
+
+  def self.fetch_types
+    types = Pokeapi.fetch('https://pokeapi.co/api/v2/type')
+    types['results'].map do |type|
+      { created_at: DateTime.now,
+        updated_at: DateTime.now,
+        name: type['name'],
+        id: Pokeapi.get_Id(type['url']) }
+    end
+  end
+
+  def self.fetch_abilities
+    abilities = Pokeapi.fetch('https://pokeapi.co/api/v2/ability?offset=0&limit=2000')
+    abilities['results'].map do |type|
+      {
+        created_at: DateTime.now,
+        updated_at: DateTime.now,
+        name: type['name'],
+        id: Pokeapi.get_id(type['url'])
+      }
+    end
+  end
+
+  def self.format_evolutions(id)
+    chains = []
+
+    data = Pokeapi.fetch("https://pokeapi.co/api/v2/evolution-chain/#{id}/")
+
+    return {} if data.empty?
+
+    evolution_data = data['chain']
+    evolves_to = evolution_data['evolves_to']
+
+    number_of_evolutions = evolves_to.length
+    loop do
+      if number_of_evolutions >= 1
+        evolvesTo.each_with_index do |_element, i|
+          chains.push({
+                        name: evolution_data['evolves_to'][i]['species']['name'],
+                        id: Pokeapi.get_id(evolution_data['evolves_to'][i]['species']['url'])
+                      })
         end
-        return data
-    end
+      end
 
-    def Pokeapi.getId(str) 
-        return str.split('/').slice(-1)
-    end
+      chains.push({
+                    name: evolution_data['species']['name'],
+                    id: Pokeapi.get_id(evolution_data['species']['url'])
+                  })
 
-    def Pokeapi.getPokemons()
-        pokemons = Pokeapi.fetch('https://pokeapi.co/api/v2/pokemon?limit=2000&offset=0')
-        formattedPokemons = pokemons["results"].map{|poke| {created_at:DateTime.now,updated_at:DateTime.now ,name: poke["name"], id: Pokeapi.getId(poke["url"])} }
-        
-        return formattedPokemons
+      break unless evolution_data.empty? && !evolution_data.key?('evolves_to')
     end
+    chains
+  end
 
-    
-    def Pokeapi.getTypes()
-        types = Pokeapi.fetch('https://pokeapi.co/api/v2/type')
-        formatted = types["results"].map{|type| {created_at:DateTime.now,updated_at:DateTime.now, name: type["name"], id: Pokeapi.getId(type["url"])} }
+  def self.insert_config_data
+    ActiveRecord::Base.transaction do
+      Pokemon.insert_all(Pokeapi.fetch_pokemons)
+      Type.insert_all(Pokeapi.fetch_types)
+      Ability.insert_all(Pokeapi.fetch_abilities)
     end
-    
-    def Pokeapi.getAbilities()
-        abilities = Pokeapi.fetch('https://pokeapi.co/api/v2/ability?offset=0&limit=2000')
-        formatted = abilities["results"].map{|type| {created_at:DateTime.now, updated_at:DateTime.now,name: type["name"], id: Pokeapi.getId(type["url"])} }
-    end
+  end
 
-    def Pokeapi.getEvolutions(id)
-        chains = []
-
-        data = Pokeapi.fetch("https://pokeapi.co/api/v2/evolution-chain/#{id}/")
-        
-        if data.empty? 
-            return {} 
-        end
-        
-        evolutionData = data["chain"]
-        evolvesTo = evolutionData["evolves_to"]
-    
-        numberOfEvolutions = evolvesTo.length;            
-        loop do 
-            if numberOfEvolutions >= 1
-                evolvesTo.each_with_index do |element,i|
-                    chains.push({
-                        name: evolutionData["evolves_to"][i]["species"]["name"],
-                        id: Pokeapi.getId(evolutionData["evolves_to"][i]["species"]["url"])
-                      });
-                  end
-                end
-
-            chains.push({
-                name: evolutionData["species"]["name"],
-                id: Pokeapi.getId(evolutionData["species"]["url"])
-                });
-
-            
-            break unless evolutionData.empty? && !evolutionData.has_key?("evolves_to")
-        end
-        return chains 
+  def self.insert_evolutions
+    evolutions = []
+    poke_evolutions = []
+    Pokemon.find_each do |pokemon|
+      id = pokemon.id
+      evo = Pokeapi.fetch_evolutions(pokemon.id)
+      poke_evo = evo.reject(&:empty?).map { |pe| { pokemon_id: id, evolution_id: pe[:id] } }
+      evolutions.push(evo)
+      poke_evolutions.push(poke_evo)
     end
-    def Pokeapi.insertConfigData
-        ActiveRecord::Base.transaction do
-            Pokemon.insert_all(Pokeapi.getPokemons())
-            Type.insert_all(Pokeapi.getTypes())
-            Ability.insert_all(Pokeapi.getAbilities())
-          end
+    data = evolutions.reject(&:empty?).flatten(1).map do |evol|
+      { name: evol[:name],
+        id: evol[:id],
+        updated_at: DateTime.now,
+        created_at: DateTime.now }
     end
-    def Pokeapi.insertEvolutions
-        evolutions = []
-        pokeEvolutions = []
-        Pokemon.find_each do |pokemon|
-            id = pokemon.id
-            evo = Pokeapi.getEvolutions(pokemon.id)
-            pokeEvo = evo.select {|val| !val.empty?}.map {|pe| {pokemon_id: id, evolution_id: pe[:id] } } 
-            evolutions.push(evo)
-            pokeEvolutions.push(pokeEvo)
-        end
-        data = evolutions.select {|evo| !evo.empty? }.flatten(1).map {|evol| {name: evol[:name], id: evol[:id], updated_at: DateTime.now ,created_at: DateTime.now} }
-        Evolution.insert_all(data)
-        PokemonEvolution.insert_all(pokeEvolutions.flatten(1))
-    end
+    Evolution.insert_all(data)
+    PokemonEvolution.insert_all(pokeEvolutions.flatten(1))
+  end
 
-    def Pokeapi.insertPokemonTypeAndAbilities
-        pokeTypes = []
-        pokeAbilities= []
-        Pokemon.find_each do |pokemon|
-            id = pokemon.id
-            pokemon = Pokeapi.fetch("https://pokeapi.co/api/v2/pokemon/#{id}")
-            
-            pokeType = pokemon["types"].map {|pt| {pokemon_id: id, type_id: getId(pt["type"]["url"]) } } 
-            pokeAbility = pokemon["abilities"].map {|pa| {pokemon_id: id, ability_id: getId(pa["ability"]["url"]) }}
-            
-            pokeTypes.push(pokeType)
-            pokeAbilities.push(pokeAbility) 
-            
-            Pokemon.where(id:id).update(picture: pokemon["sprites"]["front_default"])
-        end
-        ActiveRecord::Base.transaction do
-            PokemonType.insert_all(pokeTypes.flatten(1))
-            PokemonAbility.insert_all(pokeAbilities.flatten(1))
-        end
+  def self.insert_types_and_abilities
+    poke_types = []
+    poke_abilities = []
+    Pokemon.find_each do |pokemon|
+      id = pokemon.id
+      pokemon = Pokeapi.fetch("https://pokeapi.co/api/v2/pokemon/#{id}")
+
+      poke_type = pokemon['types'].map do |pt|
+        { pokemon_id: id,
+          type_id: getId(pt['type']['url']) }
+      end
+      poke_ability = pokemon['abilities'].map do |pa|
+        { pokemon_id: id,
+          ability_id: getId(pa['ability']['url']) }
+      end
+
+      poke_types.push(poke_type)
+      poke_abilities.push(poke_ability)
+
+      Pokemon.where(id: id).update(picture: pokemon['sprites']['front_default'])
     end
+    ActiveRecord::Base.transaction do
+      PokemonType.insert_all(poke_types.flatten(1))
+      PokemonAbility.insert_all(poke_abilities.flatten(1))
+    end
+  end
 end
-Pokeapi.getPokemons()
-Pokeapi.insertConfigData();
-Pokeapi.insertEvolutions();
-Pokeapi.insertPokemonTypeAndAbilities()
+
+Pokeapi.fetch_pokemons
+Pokeapi.insert_config_data
+Pokeapi.insert_evolutions
+Pokeapi.insert_types_and_abilities
