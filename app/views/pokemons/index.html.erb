@@ -1,11 +1,22 @@
-<%= render 'components/header', title: @title  %>
+<!DOCTYPE html>
+<html>
 
- <section>
-<% @pokemons.each do |pokemon| %>
-<article><%= pokemon[:name] %></article>
-<% end %>
-</section> 
+<head>
+    <title>Pokeapi</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+</head>
 
-<%= paginate @pokemons %>
+<body>
+    <%= render 'components/header', title: @title  %>
+    <section class="pokemons-container">
+        <% @pokemons.each do |pokemon| %>
+        <article class="pokemon"><%= link_to pokemon[:name], controller: "pokemons", action: "show", id: pokemon[:id] %></article>
+        <% end %>
+    </section>
+    <div class="paginate"><%= paginate @pokemons %></div>
+    <%= render 'components/footer' %>
+</body>
 
- <%= render 'components/footer' %>  
+</html>

@@ -1,25 +1,45 @@
-<%= render 'components/header', title: @title  %>
+<!DOCTYPE html>
+<html>
 
-<div class="pokemon-container">
-<%= image_tag ("#{@pokemon[:picture]}") %>
-<h4>Abilities</h4>
-<ul>
-<% @abilities.each do |ab| %>
-<li><%= ab[:name] %></li>
-<% end %>
-</ul>
-<h4>Evolutions</h4>
-<ul>
-<% @evolutions.each do |ev| %>
-<li><%= ev[:name] %></li>
-<% end %>
-</ul>
-<h4>Types</h4>
-<ul>
-<% @types.each do |type| %>
-<li><%= type[:name] %></li>
-<% end %>
-</ul>
-</div>
+<head>
+    <title>Pokeapi</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+</head>
 
- <%= render 'components/footer' %>  
+<body>
+    <%= render 'components/header', title: @title  %>
+    <div class="pokemon-container">
+        <%= image_tag ("#{@pokemon[:picture]}") %>
+        <div class="cat">
+          <div class="card">
+            <h4>Abilities</h4>
+            <ul>
+                <% @abilities.each do |ab| %>
+                <li><%= ab[:name] %></li>
+                <% end %>
+            </ul>
+            </div>
+                <div class="card">
+                    <h4>Evolutions</h4>
+                    <ul>
+                        <% @evolutions.each do |ev| %>
+                        <li><%= ev[:name]%></li>
+                        <% end %>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Types</h4>
+                    <ul>
+                        <% @types.each do |type| %>
+                        <li><%= link_to type[:name], controller: "pokemons", action: "type", id: type[:id] %></li>
+                        <% end %>
+                    </ul>
+                </div>
+            </div>
+            </div>
+    <%= render 'components/footer' %>
+</body>
+
+</html>
