@@ -1,0 +1,7 @@
+{
+    "ruby.rubocop.onSave": true,
+    "editor.formatOnSave": true,
+    "files.associations": {
+        "*.erb": "erb"
+    }
+}
